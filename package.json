@@ -1,0 +1,23 @@
+{
+  "name": "ur-core",
+  "version": "1.0.0",
+  "description": "Royal Game of Ur implementation using the rules from the British Museum / Irving Finkel",
+  "main": "src/game.js",
+  "dependencies": {
+    "immutable": "^3.8.2"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^4.0.1",
+    "rewire": "^3.0.2"
+  },
+  "scripts": {
+    "test": "mocha \"test/**/*.js\""
+  },
+  "author": "felixschorer",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/felixschorer/ur-game.git"
+  }
+}
