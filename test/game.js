@@ -173,7 +173,7 @@ describe('moveStone', () => {
         let board = moveStone('w', 0, 4, createBoard(2));
         board.get(0).get('w').should.equal(1);
         board.get(4).get('w').should.equal(1);
-        board = moveStone('w', 4, 0, board);
+        board = moveStone('w', '4', '0', board);
         board.get(0).get('w').should.equal(2);
         board.get(4).get('w').should.equal(0);
     });
@@ -192,6 +192,10 @@ describe('makeMove', () => {
         const board = makeMove('w', 0, sharedField, moveStone('b', 0, sharedField, createBoard(2)));
         board.get(sharedField).get('b').should.equal(0);
         board.get(0).get('b').should.equal(2);
+
+        const board2 = makeMove('w', '0', sharedField.toString(), moveStone('b', 0, sharedField, createBoard(2)));
+        board2.get(sharedField).get('b').should.equal(0);
+        board2.get(0).get('b').should.equal(2);
     });
 
     it('should only throw stones on shared fields', () => {
@@ -240,7 +244,7 @@ describe('endTurn', () => {
     it('should grant a reroll when landing on a reroll field', () => {
         const state = new Map({
             currentPlayer: 'w',
-            possibleMoves: new Map().set(0, rerollFields.first()),
+            possibleMoves: new Map().set('0', rerollFields.first()),
             dice: new List([0, 0, 0, 0]),
             board: createBoard(1)
         });
@@ -250,7 +254,7 @@ describe('endTurn', () => {
     it('should announce the winner', () => {
         const state = new Map({
             currentPlayer: 'w',
-            possibleMoves: new Map().set(0, 15),
+            possibleMoves: new Map().set('0', 15),
             dice: new List([0, 0, 0, 0]),
             board: createBoard(1)
         });

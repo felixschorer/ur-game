@@ -1,4 +1,4 @@
-const { List, Set, Map } = require('immutable');
+const { fromJS, List, Set, Map } = require('immutable');
 
 const sharedFields = Set([5, 6, 7, 8, 9, 10, 11, 12]);
 const rerollFields = Set([4, 8, 14]);
@@ -46,10 +46,10 @@ function possibleMoves(player, diceResult, board) {
             stones.get(player) && diceResult > 0
                 ? (dest =>
                      isMoveLegal(player, dest, board)
-                        ? moves.set(field, dest)
+                        ? moves.set(field.toString(), dest)
                         : safeFields.has(dest) && !board.get(dest).get(player) // only if occupied by opponent
                             && isMoveLegal(player, dest + 1, board)
-                            ? moves.set(field, dest + 1)
+                            ? moves.set(field.toString(), dest + 1)
                             : moves
                 )(field + diceResult)
                 : moves
@@ -75,11 +75,11 @@ function moveStone(player, from, to, board) {
 }
 
 function makeMove(player, from, to, board) {
-    return (board =>
+    return ((board, to) =>
         sharedFields.has(to) && board.get(to).get(otherPlayer(player)) > 0
             ? moveStone(otherPlayer(player), to, 0, board)
             : board
-    )(moveStone(player, from, to, board));
+    )(moveStone(player, from, to, board), typeof to === 'number' ? to : parseInt(to));
 }
 
 function startTurn(player, numDice, board) {
@@ -95,7 +95,7 @@ function startTurn(player, numDice, board) {
 }
 
 function endTurn(player, selField, state) {
-    return ((currentPlayer, possibleMoves, numDice, board) =>
+    return ((selField, currentPlayer, possibleMoves, numDice, board) =>
         player === currentPlayer && (possibleMoves.has(selField) || possibleMoves.size === 0)
             ? (board =>
                 (winner =>
@@ -107,26 +107,63 @@ function endTurn(player, selField, state) {
                 )(winner(board))
             )(!possibleMoves.size ? board : makeMove(player, selField, possibleMoves.get(selField), board))
             : false
-    )(state.get('currentPlayer'), state.get('possibleMoves'), state.get('dice').size, state.get('board'));
+    )(typeof selField !== 'undefined' && selField.toString(), state.get('currentPlayer'), state.get('possibleMoves'),
+        state.get('dice').size, state.get('board'));
+}
+
+function startGame(numStones, numDice, player) {
+    return startTurn(player === 'w' || player === 'b' ? player : 'w', numDice || 4, createBoard(numStones || 7));
+}
+
+function voidTurn(player, state) {
+    return player === state.get('currentPlayer')
+        ? startTurn(otherPlayer(player), state.get('dice').size, state.get('board'))
+        : false;
 }
 
 class Ur {
-    constructor(numStones, numDice) {
-        this._state = startTurn('w', numDice, createBoard(numStones));
+    constructor(numStones, numDice, player) {
+        this._state = startGame(numStones, numDice, player);
     }
 
     getState() {
         return this._state.toJS();
     }
 
+    voidTurn(player) {
+        return this._setState(voidTurn(player, this._state));
+    }
+
     takeTurn(player, selectedField) {
-        const state = endTurn(player, selectedField, this._state);
+        return this._setState(endTurn(player, selectedField, this._state));
+    }
+
+    _setState(state) {
         if (state) {
             this._state = state;
             return this.getState();
         }
         return false;
     }
+
+    static startGame(numStones, numDice, player) {
+        return startGame(numStones, numDice, player).toJS();
+    }
+
+    static voidTurn(state, player) {
+        return Ur._stateToJs(voidTurn(player, fromJS(state)));
+    }
+
+    static takeTurn(state, player, selectedField) {
+        return Ur._stateToJs(endTurn(player, selectedField, fromJS(state)));
+    }
+
+    static _stateToJs(state) {
+        if (Map.isMap(state)) return state.toJS();
+        return state;
+    }
 }
+Ur.BLACK = 'b';
+Ur.WHITE = 'w';
 
 module.exports = Ur;
