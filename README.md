@@ -18,6 +18,7 @@ const game = new Ur();
 // default: stones = 7, dice = 4, player = Ur.WHITE
 
 let state = game.getState();
+// possible state:
 // state.currentPlayer -> 'w'
 // state.diceResult -> 3
 // state.possibleMoves -> { '0': 3 }
@@ -33,6 +34,7 @@ game.voidTurn(Ur.BLACK);
 // returns false when not the current player is input, new state otherwise
 // useful for ending turns after a certain amount of time
 ```
+
 Alternatively you can keep track of the state yourself.
 ```javascript
 const Ur = require('ur-game');
@@ -41,6 +43,7 @@ const Ur = require('ur-game');
 let state = Ur.startGame(7, 4, Ur.BLACK);
 // default: stones = 7, dice = 4, player = Ur.WHITE
 
+// possible state:
 // state.currentPlayer -> 'b'
 // state.diceResult -> 2
 // state.possibleMoves -> { '0': 2 }
@@ -56,6 +59,26 @@ state = Ur.voidTurn(state, Ur.WHITE);
 // useful for ending turns after a certain amount of time
 ```
 
+## Metadata
+```javascript
+const Ur = require('ur-game');
+
+// metadata(field : number)
+Ur.metadata(8);
+// returns object containing metadata for the specified field
+// { 
+//     shared: true, 
+//     reroll: true, 
+//     safe: true,
+//     multi: false
+// }
+// shared:  field is shared by the paths of both players
+// reroll:  player gets an other turn when landing on it
+//          (there fields are usually marked with a star)
+// safe:    player can't be thrown on this field
+//          (`false` for all fields which aren't shared)
+// multi:   field can hold multiple stones of the same color 
+```
 
 ## State
 ```javascript
@@ -77,36 +100,23 @@ state.board
 // index 0 and 15 aren't actual fields on the board 
 // they represent the starting and finishing point respectively
 // [ 
-//     { w: 7, b: 7, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] },
-//     { w: 0, b: 0, metadata: [Object] } 
+//     { w: 7, b: 7 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 },
+//     { w: 0, b: 0 } 
 // ] 
-
-state.board[8].metadata
-// object containing metadata for each field
-// { 
-//     shared: true, 
-//     reroll: true, 
-//     safe: true 
-// }
-// shared:  field is shared by the paths of both players
-// reroll:  player gets an other turn when landing on it
-//          (there fields are usually marked with a star)
-// safe:    player can't be thrown on this field
-//          (`false` for all fields which aren't shared)
 
 state.possibleMoves
 // an object containing all legal moves based on the result of dice roll

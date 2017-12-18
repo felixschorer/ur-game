@@ -1,8 +1,9 @@
 const { fromJS, List, Set, Map } = require('immutable');
 
-const sharedFields = Set([5, 6, 7, 8, 9, 10, 11, 12]);
-const rerollFields = Set([4, 8, 14]);
+const sharedFields = new Set([5, 6, 7, 8, 9, 10, 11, 12]);
+const rerollFields = new Set([4, 8, 14]);
 const safeFields = rerollFields.intersect(sharedFields);
+const multiFields = new Set([0, 15]);
 
 function otherPlayer(player) {
     return player === 'w' ? 'b' : 'w';
@@ -20,11 +21,6 @@ function createBoard(numStones) {
     return new List(new Array(16)).map((_, field) => new Map({
         w: !field ? numStones : 0,
         b: !field ? numStones : 0,
-        metadata: {
-            shared: sharedFields.has(field),
-            reroll: rerollFields.has(field),
-            safe: safeFields.has(field)
-        }
     }))
 }
 
@@ -36,7 +32,7 @@ function winner(board) {
 }
 
 function isMoveLegal(player, dest, board) {
-    return dest === 15 || dest < 16 && !board.get(dest).get(player)
+    return dest < 16 && (!board.get(dest).get(player) || multiFields.has(dest))
         && !(safeFields.has(dest) && board.get(dest).get(otherPlayer(player)));
 }
 
@@ -156,6 +152,15 @@ class Ur {
 
     static takeTurn(state, player, selectedField) {
         return Ur._stateToJs(endTurn(player, selectedField, fromJS(state)));
+    }
+
+    static metadata(fieldId) {
+        return {
+            shared: sharedFields.has(fieldId),
+            reroll: rerollFields.has(fieldId),
+            safe: rerollFields.has(fieldId),
+            multi: multiFields.has(fieldId)
+        };
     }
 
     static _stateToJs(state) {
