@@ -1,6 +1,6 @@
 {
   "name": "ur-game",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Royal Game of Ur implementation using the rules from the British Museum / Irving Finkel",
   "main": "src/game.js",
   "dependencies": {
