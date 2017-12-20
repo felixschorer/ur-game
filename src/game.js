@@ -21,14 +21,16 @@ function createBoard(numStones) {
     return new List(new Array(16)).map((_, field) => new Map({
         w: !field ? numStones : 0,
         b: !field ? numStones : 0,
-    }))
+    }));
 }
 
 function winner(board) {
-    return board.reduce(
-        (occupies, stones) => occupies.map((fields, player) => fields + (stones.get(player) > 0)),
-        Map({ w: 0, b: 0 })
-    ).filter((fields, player) => fields === 1 && board.get(15).get(player) > 0).keySeq().first();
+    return board
+        .reduce(
+            (occupies, stones) => occupies.map((fields, player) => fields + (stones.get(player) > 0)),
+            new Map({ w: 0, b: 0 })
+        )
+        .filter((fields, player) => fields === 1 && board.get(15).get(player) > 0).keySeq().first();
 }
 
 function isMoveLegal(player, dest, board) {
@@ -37,21 +39,18 @@ function isMoveLegal(player, dest, board) {
 }
 
 function possibleMoves(player, diceResult, board) {
-    return board.reduce(
-        (moves, stones, field) => (
-            stones.get(player) && diceResult > 0
-                ? (dest =>
-                     isMoveLegal(player, dest, board)
-                        ? moves.set(field.toString(), dest)
-                        : safeFields.has(dest) && !board.get(dest).get(player) // only if occupied by opponent
-                            && isMoveLegal(player, dest + 1, board)
-                            ? moves.set(field.toString(), dest + 1)
-                            : moves
-                )(field + diceResult)
-                : moves
-        ),
-        Map()
-    );
+    return board.reduce((moves, stones, field) => {
+        if (!stones.get(player) || diceResult === 0) return moves;
+        const dest = field + diceResult;
+        if(isMoveLegal(player, dest, board)) {
+            return moves.set(field.toString(), dest);
+        } else if(safeFields.has(dest) && !!board.get(dest).get(otherPlayer(player))
+            && isMoveLegal(player, dest + 1, board)) {
+            return moves.set(field.toString(), dest + 1)
+        } else {
+            return moves;
+        }
+    }, new Map());
 }
 
 function updateStones(field, player, board, updater) {
@@ -71,40 +70,41 @@ function moveStone(player, from, to, board) {
 }
 
 function makeMove(player, from, to, board) {
-    return ((board, to) =>
-        sharedFields.has(to) && board.get(to).get(otherPlayer(player)) > 0
-            ? moveStone(otherPlayer(player), to, 0, board)
-            : board
-    )(moveStone(player, from, to, board), typeof to === 'number' ? to : parseInt(to));
+    to = typeof to === 'number' ? to : parseInt(to);
+    const newBoard = moveStone(player, from, to, board);
+    if(sharedFields.has(to) && newBoard.get(to).get(otherPlayer(player)) > 0) {
+        return moveStone(otherPlayer(player), to, 0, newBoard);
+    }
+    return newBoard;
 }
 
 function startTurn(player, numDice, board) {
-    return (dice =>
-        (diceResult => Map({
-            currentPlayer: player,
-            dice: dice,
-            diceResult: diceResult,
-            possibleMoves: possibleMoves(player, diceResult, board),
-            board: board
-        }))(diceResult(dice))
-    )(rollDice(numDice));
+    const dice = rollDice(numDice);
+    const  diceRoll = diceResult(dice);
+    return new Map({
+        currentPlayer: player,
+        dice: dice,
+        diceResult: diceRoll,
+        possibleMoves: possibleMoves(player, diceRoll, board),
+        board: board
+    });
 }
 
 function endTurn(player, selField, state) {
-    return ((selField, currentPlayer, possibleMoves, numDice, board) =>
-        player === currentPlayer && (possibleMoves.has(selField) || possibleMoves.size === 0)
-            ? (board =>
-                (winner =>
-                    typeof winner !== 'undefined'
-                        ? Map({ winner: winner, board: board })
-                        : rerollFields.has(possibleMoves.get(selField))
-                            ? startTurn(player, numDice, board)
-                            : startTurn(otherPlayer(player), numDice, board)
-                )(winner(board))
-            )(!possibleMoves.size ? board : makeMove(player, selField, possibleMoves.get(selField), board))
-            : false
-    )(typeof selField !== 'undefined' && selField.toString(), state.get('currentPlayer'), state.get('possibleMoves'),
-        state.get('dice').size, state.get('board'));
+    selField = typeof selField !== 'undefined' && selField.toString();
+    const currentPlayer = state.get('currentPlayer');
+    const possibleMoves = state.get('possibleMoves');
+    const numDice = state.get('dice').size;
+    const board = state.get('board');
+    if (player === currentPlayer && (possibleMoves.has(selField) || possibleMoves.size === 0)) {
+        const newBoard = !possibleMoves.size
+            ? board : makeMove(player, selField, possibleMoves.get(selField), board);
+        const winningPlayer = winner(newBoard);
+        if (typeof winningPlayer !== 'undefined') return new Map({ winner: winningPlayer, board: newBoard });
+        return startTurn(rerollFields.has(possibleMoves.get(selField))
+            ? player : otherPlayer(player), numDice, newBoard);
+    }
+    return false;
 }
 
 function startGame(numStones, numDice, player) {
@@ -155,12 +155,13 @@ class Ur {
     }
 
     static metadata(fieldId) {
-        return {
+        const metadata = new Array(16).fill().map((_, fieldId) => ({
             shared: sharedFields.has(fieldId),
             reroll: rerollFields.has(fieldId),
             safe: rerollFields.has(fieldId),
             multi: multiFields.has(fieldId)
-        };
+        }));
+        return typeof fieldId === 'undefined' ? metadata : metadata[fieldId];
     }
 
     static _stateToJs(state) {
