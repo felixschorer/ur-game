@@ -108,23 +108,6 @@ state.winner
 // either 'w', 'b' or undefined
 ```
 
-## Metadata
-```javascript
-const Ur = require('ur-game');
-
-// metadata(field? : number)
-Ur.metadata(8);
-// returns object containing metadata for the specified field or all fields if omitted
-// {
-//     shared: true,
-//     reroll: true,
-//     safe: true,
-//     multi: false
-// }
-// shared:  field is shared by the paths of both players
-// reroll:  player gets an other turn when landing on it
-//          (there fields are usually marked with a star)
-// safe:    player can't be thrown on this field
-//          (`false` for all fields which aren't shared)
-// multi:   field can hold multiple stones of the same color
-```
+## Pretty State
+`Ur.prettifyState(state);` returns a prettified version of the state.  
+`Ur.uglifyState(state);` converts a prettified state back to its original representation.

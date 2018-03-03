@@ -5,6 +5,17 @@ const rerollFields = new Set([4, 8, 14]);
 const safeFields = rerollFields.intersect(sharedFields);
 const multiFields = new Set([0, 15]);
 
+const boardLayout = [
+    [[13, 'w'], [12], [13, 'b']],
+    [[14, 'w'], [11], [14, 'b']],
+    [[15, 'w'], [10], [15, 'b']],
+    [[0,  'w'], [9],  [0,  'b']],
+    [[1,  'w'], [8],  [1,  'b']],
+    [[2,  'w'], [7],  [2,  'b']],
+    [[3,  'w'], [6],  [3,  'b']],
+    [[4,  'w'], [5],  [4,  'b']]
+];
+
 function otherPlayer(player) {
     return player === 'w' ? 'b' : 'w';
 }
@@ -154,14 +165,31 @@ class Ur {
         return Ur._stateToJs(endTurn(player, selectedField, fromJS(state)));
     }
 
-    static metadata(fieldId) {
-        const metadata = new Array(16).fill().map((_, fieldId) => ({
-            shared: sharedFields.has(fieldId),
-            reroll: rerollFields.has(fieldId),
-            safe: rerollFields.has(fieldId),
-            multi: multiFields.has(fieldId)
+    static prettifyState(uglyState) {
+        const prettyBoard = boardLayout.map(row => row.map(cell => {
+            let [cellIndex, player] = cell;
+            const boardCell = uglyState.board[cellIndex];
+            player = player || (boardCell.w && 'w') || (boardCell.b && 'b') || null;
+            const returnObj = {
+                player: player,
+                cell: cellIndex,
+                stones: boardCell[player] || 0
+            };
+            if(sharedFields.has(cellIndex)) returnObj.shared = true;
+            if(rerollFields.has(cellIndex)) returnObj.reroll = true;
+            if(multiFields.has(cellIndex)) returnObj.multi = true;
+            if(safeFields.has(cellIndex)) returnObj.safe = true;
+            return returnObj;
         }));
-        return typeof fieldId === 'undefined' ? metadata : metadata[fieldId];
+        return Object.assign({}, uglyState, { board: prettyBoard });
+    }
+
+    static uglifyState(prettyState) {
+        const uglyBoard = new Array(16).fill().map(() => ({ w: 0, b: 0 }));
+        prettyState.board.forEach(row => row.forEach(cell => {
+            if(cell.player) uglyBoard[cell.cell][cell.player] = cell.stones;
+        }));
+        return Object.assign({}, prettyState, { board: uglyBoard });
     }
 
     static _stateToJs(state) {
