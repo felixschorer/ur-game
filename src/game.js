@@ -1,9 +1,11 @@
 const { fromJS, List, Set, Map } = require('immutable');
 
-const sharedFields = new Set([5, 6, 7, 8, 9, 10, 11, 12]);
-const rerollFields = new Set([4, 8, 14]);
-const safeFields = rerollFields.intersect(sharedFields);
-const multiFields = new Set([0, 15]);
+const START = 0;
+const FINISH = 15;
+const SHARED_FIELDS = new Set([5, 6, 7, 8, 9, 10, 11, 12]);         // fields shared by both players
+const REROLL_FIELDS = new Set([4, 8, 14]);                          // fields when landed upon provide an other turn
+const SAFE_SHARED_FIELDS = REROLL_FIELDS.intersect(SHARED_FIELDS);  // shared fields which are safe to sit on
+const MULTI_FIELDS = new Set([START, FINISH]);                      // fields which allow multiple stones
 
 const boardLayout = [
     [[13, 'w'], [12], [13, 'b']],
@@ -29,9 +31,9 @@ function diceResult(dice) {
 }
 
 function createBoard(numStones) {
-    return new List(new Array(16)).map((_, field) => new Map({
-        w: !field ? numStones : 0,
-        b: !field ? numStones : 0,
+    return new List(new Array(FINISH + 1)).map((_, field) => new Map({
+        w: field === START ? numStones : 0,
+        b: field === START ? numStones : 0,
     }));
 }
 
@@ -41,12 +43,12 @@ function winner(board) {
             (occupies, stones) => occupies.map((fields, player) => fields + (stones.get(player) > 0)),
             new Map({ w: 0, b: 0 })
         )
-        .filter((fields, player) => fields === 1 && board.get(15).get(player) > 0).keySeq().first();
+        .filter((fields, player) => fields === 1 && board.get(FINISH).get(player) > 0).keySeq().first();
 }
 
 function isMoveLegal(player, dest, board) {
-    return dest < 16 && (!board.get(dest).get(player) || multiFields.has(dest))
-        && !(safeFields.has(dest) && board.get(dest).get(otherPlayer(player)));
+    return dest <= FINISH && (!board.get(dest).get(player) || MULTI_FIELDS.has(dest))
+        && !(SAFE_SHARED_FIELDS.has(dest) && board.get(dest).get(otherPlayer(player)));
 }
 
 function possibleMoves(player, diceResult, board) {
@@ -55,7 +57,7 @@ function possibleMoves(player, diceResult, board) {
         const dest = field + diceResult;
         if(isMoveLegal(player, dest, board)) {
             return moves.set(field.toString(), dest);
-        } else if(safeFields.has(dest) && !!board.get(dest).get(otherPlayer(player))
+        } else if(SAFE_SHARED_FIELDS.has(dest) && !!board.get(dest).get(otherPlayer(player))
             && isMoveLegal(player, dest + 1, board)) {
             return moves.set(field.toString(), dest + 1)
         } else {
@@ -83,8 +85,8 @@ function moveStone(player, from, to, board) {
 function makeMove(player, from, to, board) {
     to = typeof to === 'number' ? to : parseInt(to);
     const newBoard = moveStone(player, from, to, board);
-    if(sharedFields.has(to) && newBoard.get(to).get(otherPlayer(player)) > 0) {
-        return moveStone(otherPlayer(player), to, 0, newBoard);
+    if(SHARED_FIELDS.has(to) && newBoard.get(to).get(otherPlayer(player)) > 0) {
+        return moveStone(otherPlayer(player), to, START, newBoard);
     }
     return newBoard;
 }
@@ -112,7 +114,7 @@ function endTurn(player, selField, state) {
             ? board : makeMove(player, selField, possibleMoves.get(selField), board);
         const winningPlayer = winner(newBoard);
         if (typeof winningPlayer !== 'undefined') return new Map({ winner: winningPlayer, board: newBoard });
-        return startTurn(rerollFields.has(possibleMoves.get(selField))
+        return startTurn(REROLL_FIELDS.has(possibleMoves.get(selField))
             ? player : otherPlayer(player), numDice, newBoard);
     }
     return false;
@@ -170,22 +172,25 @@ class Ur {
             let [cellIndex, player] = cell;
             const boardCell = uglyState.board[cellIndex];
             player = player || (boardCell.w && 'w') || (boardCell.b && 'b') || null;
-            const returnObj = {
+            return {
                 player: player,
                 cell: cellIndex,
-                stones: boardCell[player] || 0
+                stones: boardCell[player] || 0,
+                metadata: {
+                    shared: SHARED_FIELDS.has(cellIndex),
+                    safeShared: SAFE_SHARED_FIELDS.has(cellIndex),
+                    reroll: REROLL_FIELDS.has(cellIndex),
+                    multi: MULTI_FIELDS.has(cellIndex),
+                    start: START === cellIndex,
+                    finish: FINISH === cellIndex
+                }
             };
-            if(sharedFields.has(cellIndex)) returnObj.shared = true;
-            if(rerollFields.has(cellIndex)) returnObj.reroll = true;
-            if(multiFields.has(cellIndex)) returnObj.multi = true;
-            if(safeFields.has(cellIndex)) returnObj.safe = true;
-            return returnObj;
         }));
         return Object.assign({}, uglyState, { board: prettyBoard });
     }
 
     static uglifyState(prettyState) {
-        const uglyBoard = new Array(16).fill().map(() => ({ w: 0, b: 0 }));
+        const uglyBoard = new Array(FINISH + 1).fill().map(() => ({ w: 0, b: 0 }));
         prettyState.board.forEach(row => row.forEach(cell => {
             if(cell.player) uglyBoard[cell.cell][cell.player] = cell.stones;
         }));

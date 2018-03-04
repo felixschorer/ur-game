@@ -5,9 +5,9 @@ const { List, Map } = require('immutable');
 
 const ur = rewire('../src/game');
 
-const sharedFields = ur.__get__('sharedFields');
-const rerollFields = ur.__get__('rerollFields');
-const safeFields = ur.__get__('safeFields');
+const sharedFields = ur.__get__('SHARED_FIELDS');
+const rerollFields = ur.__get__('REROLL_FIELDS');
+const safeFields = ur.__get__('SAFE_SHARED_FIELDS');
 
 const rollDice = ur.__get__('rollDice');
 const diceResult = ur.__get__('diceResult');
