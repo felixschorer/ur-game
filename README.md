@@ -1,5 +1,6 @@
 
 [![npm version](https://badge.fury.io/js/ur-game.svg)](https://badge.fury.io/js/ur-game)
+[![Build Status](https://travis-ci.org/felixschorer/ur-game.svg?branch=master)](https://travis-ci.org/felixschorer/ur-game)
 # The Royal Game of Ur
 This module implements the logic of the [Royal Game of Ur](https://en.wikipedia.org/wiki/Royal_Game_of_Ur)
 using the rules from the [British Museum / Irving Finkel](https://www.mastersofgames.com/rules/royal-ur-rules.htm).
